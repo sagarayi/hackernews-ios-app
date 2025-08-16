@@ -8,14 +8,24 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject var vm = StoriesViewModel()
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        NavigationView {
+            List(vm.stories) { story in
+                VStack(alignment: .leading) {
+                    Text(story.title ?? "No title")
+                        .font(.headline)
+                    Text("by: \(story.by ?? "Unknown") • \(story.score ?? 0) points")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle("Top Stories")
         }
-        .padding()
+        .task {
+            await vm.fetchTopStories()
+        }
     }
 }
 
