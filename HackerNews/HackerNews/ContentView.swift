@@ -13,12 +13,14 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             List(vm.stories) { story in
-                VStack(alignment: .leading) {
-                    Text(story.title ?? "No title")
-                        .font(.headline)
-                    Text("by: \(story.by ?? "Unknown") • \(story.score ?? 0) points")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                NavigationLink(destination: StoryDetailView(story: story)) {
+                    VStack(alignment: .leading) {
+                        Text(story.title ?? "No title")
+                            .font(.headline)
+                        Text("by: \(story.by ?? "Unknown") • \(story.score ?? 0) points")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             .navigationTitle("Top Stories")
