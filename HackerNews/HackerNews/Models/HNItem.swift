@@ -25,7 +25,7 @@
 
 import Foundation
 
-enum ItemType: Codable {
+enum ItemType: String, Codable {
     case job
     case story
     case comment
@@ -48,7 +48,7 @@ struct HNItem: Hashable, Codable {
     var score: Int?
     var title: String?
     var parts: [String]?
-    var descendants: [Int]?
+    var descendants: Int?
     
     enum CodingKeys: String, CodingKey {
         case id

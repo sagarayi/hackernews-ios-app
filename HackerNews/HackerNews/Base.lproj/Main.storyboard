@@ -31,10 +31,69 @@
                     <view key="view" contentMode="scaleToFill" id="Jvw-an-cv1">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="-1" estimatedSectionHeaderHeight="-1" sectionFooterHeight="-1" estimatedSectionFooterHeight="-1" translatesAutoresizingMaskIntoConstraints="NO" id="Zyt-XZ-NvK">
+                                <rect key="frame" x="0.0" y="47" width="393" height="852"/>
+                                <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                                <prototypes>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" restorationIdentifier="StoryViewCell" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" reuseIdentifier="StoryViewCell" id="yaz-Xg-icr" customClass="StoryViewCell" customModule="HackerNews" customModuleProvider="target">
+                                        <rect key="frame" x="0.0" y="50" width="393" height="43.666667938232422"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="yaz-Xg-icr" id="MSb-1C-ASk">
+                                            <rect key="frame" x="0.0" y="0.0" width="393" height="43.666667938232422"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="U1W-wO-eSP" userLabel="TitleLabel">
+                                                    <rect key="frame" x="10" y="10" width="41.333333333333336" height="21"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="textColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="aCJ-ig-1JN" userLabel="PointsLabel">
+                                                    <rect key="frame" x="10" y="39" width="42" height="21"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="textColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="SnM-9C-Geh" userLabel="AuthorLabel">
+                                                    <rect key="frame" x="62" y="39" width="42" height="21"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                    <nil key="textColor"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                            </subviews>
+                                            <constraints>
+                                                <constraint firstItem="aCJ-ig-1JN" firstAttribute="top" secondItem="U1W-wO-eSP" secondAttribute="bottom" constant="8" symbolic="YES" id="2lE-1t-ZAa"/>
+                                                <constraint firstItem="aCJ-ig-1JN" firstAttribute="leading" secondItem="U1W-wO-eSP" secondAttribute="leading" id="5IX-y6-5FC"/>
+                                                <constraint firstItem="SnM-9C-Geh" firstAttribute="top" secondItem="aCJ-ig-1JN" secondAttribute="top" id="Ky1-IJ-T6D"/>
+                                                <constraint firstItem="U1W-wO-eSP" firstAttribute="leading" secondItem="MSb-1C-ASk" secondAttribute="leading" constant="10" id="PbJ-0A-S1c"/>
+                                                <constraint firstItem="SnM-9C-Geh" firstAttribute="leading" secondItem="aCJ-ig-1JN" secondAttribute="trailing" constant="10" id="WSc-vg-DVk"/>
+                                                <constraint firstItem="U1W-wO-eSP" firstAttribute="top" secondItem="MSb-1C-ASk" secondAttribute="top" constant="10" id="j9C-Ux-f7Q"/>
+                                                <constraint firstItem="U1W-wO-eSP" firstAttribute="width" relation="lessThanOrEqual" secondItem="MSb-1C-ASk" secondAttribute="width" multiplier="0.9" id="vfq-du-QI8"/>
+                                            </constraints>
+                                        </tableViewCellContentView>
+                                        <connections>
+                                            <outlet property="authorLabel" destination="SnM-9C-Geh" id="bGZ-BC-8R8"/>
+                                            <outlet property="pointsLabel" destination="aCJ-ig-1JN" id="9Zb-9i-BZo"/>
+                                            <outlet property="titleLabel" destination="U1W-wO-eSP" id="qtH-bN-3am"/>
+                                        </connections>
+                                    </tableViewCell>
+                                </prototypes>
+                            </tableView>
+                        </subviews>
                         <viewLayoutGuide key="safeArea" id="1fT-WP-NVg"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                        <constraints>
+                            <constraint firstItem="Zyt-XZ-NvK" firstAttribute="width" secondItem="Jvw-an-cv1" secondAttribute="width" id="UJS-Du-KL4"/>
+                            <constraint firstItem="Zyt-XZ-NvK" firstAttribute="centerY" secondItem="1fT-WP-NVg" secondAttribute="centerY" id="gNR-t5-c6n"/>
+                            <constraint firstItem="Zyt-XZ-NvK" firstAttribute="centerX" secondItem="1fT-WP-NVg" secondAttribute="centerX" id="roz-6O-zpz"/>
+                            <constraint firstItem="Zyt-XZ-NvK" firstAttribute="height" secondItem="Jvw-an-cv1" secondAttribute="height" id="zau-Jg-rNs"/>
+                        </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="bfy-Lu-A1S"/>
+                    <connections>
+                        <outlet property="storyListTableView" destination="Zyt-XZ-NvK" id="gIZ-9i-lQM"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="5bB-fR-P88" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
