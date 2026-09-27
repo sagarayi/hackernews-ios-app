@@ -16,11 +16,11 @@ enum HNError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidResponse:
-            return "Hacker News sent an unexpected response."
+            return "The service sent an unexpected response."
         case .http(let code):
-            return "Hacker News responded with an error (\(code))."
+            return "The service responded with an error (\(code))."
         case .decodingFailed(let detail):
-            return "Couldn't read the response from Hacker News. (\(detail))"
+            return "Couldn't read the response. (\(detail))"
         case .missingItem(let id):
             return "Item \(id) is no longer available."
         }

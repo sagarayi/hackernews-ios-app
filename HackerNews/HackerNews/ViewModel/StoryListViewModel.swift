@@ -19,6 +19,7 @@ enum StoryListState: Equatable {
 protocol StoryListViewModeling: AnyObject {
     var state: StoryListState { get }
     var items: [HNItem] { get }
+    var feedTitle: String { get }
     var onChange: (@MainActor (StoryListState) -> Void)? { get set }
     var onLoadingMoreChanged: (@MainActor (Bool) -> Void)? { get set }
     func load() async
@@ -36,6 +37,7 @@ protocol StoryListViewModeling: AnyObject {
 final class StoryListViewModel: StoryListViewModeling {
     private(set) var state: StoryListState = .idle
     private(set) var items: [HNItem] = []
+    var feedTitle: String { feed.title }
     var onChange: (@MainActor (StoryListState) -> Void)?
     var onLoadingMoreChanged: (@MainActor (Bool) -> Void)?
 
@@ -146,7 +148,7 @@ final class StoryListViewModel: StoryListViewModeling {
                     // and keep pagination retryable instead of stalling it.
                     noteFailure()
                     log.error("site page contained zero rows")
-                    state = .error("Hacker News returned an empty page. Pull to refresh or tap Retry.")
+                    state = .error("The site returned an empty page. Pull to refresh or tap Retry.")
                     scheduleAutoRetry(reloadingInitial: false)
                     emit()
                 } else if let pageError {

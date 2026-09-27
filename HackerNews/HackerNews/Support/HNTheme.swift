@@ -37,29 +37,4 @@ extension HNTheme {
         view.backgroundColor = pressedBeige
         return view
     }
-
-    /// The classic bordered "Y" + "Hacker News" header mark.
-    static func makeTitleView() -> UIView {
-        let badge = UILabel()
-        badge.text = "Y"
-        badge.font = font(size: 14, weight: .bold, textStyle: .headline)
-        badge.textColor = .white
-        badge.textAlignment = .center
-        badge.layer.borderColor = UIColor.white.cgColor
-        badge.layer.borderWidth = 1.5
-        badge.translatesAutoresizingMaskIntoConstraints = false
-        badge.widthAnchor.constraint(equalToConstant: 22).isActive = true
-        badge.heightAnchor.constraint(equalToConstant: 22).isActive = true
-
-        let name = UILabel()
-        name.text = "Hacker News"
-        name.font = navTitleFont
-        name.textColor = .black
-
-        let stack = UIStackView(arrangedSubviews: [badge, name])
-        stack.axis = .horizontal
-        stack.spacing = 6
-        stack.alignment = .center
-        return stack
-    }
 }

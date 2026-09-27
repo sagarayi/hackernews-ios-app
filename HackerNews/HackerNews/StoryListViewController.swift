@@ -54,6 +54,13 @@ final class StoryListViewController: UIViewController {
         }
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // Reassert bar styling: rotation, tab switches, and returns from the
+        // detail screen can otherwise leave the bar unstylized.
+        configureNavigationBar()
+    }
+
     // MARK: - Setup
 
     private func configureNavigationBar() {
@@ -66,7 +73,7 @@ final class StoryListViewController: UIViewController {
         navigationController?.navigationBar.compactAppearance = appearance
         navigationController?.navigationBar.tintColor = .black
         navigationController?.navigationBar.prefersLargeTitles = false
-        navigationItem.titleView = HNTheme.makeTitleView()
+        navigationItem.title = viewModel.feedTitle
     }
 
     private func configureTableView() {
@@ -82,11 +89,13 @@ final class StoryListViewController: UIViewController {
         table.register(HNCommentCell.self, forCellReuseIdentifier: HNCommentCell.reuseIdentifier)
         table.refreshControl = refreshControl
         view.addSubview(table)
+        // Pinned to the safe area (both bars are opaque): scroll insets stay
+        // constant, so push/pop transitions never shift or flash the rows.
         NSLayoutConstraint.activate([
-            table.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            table.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            table.topAnchor.constraint(equalTo: view.topAnchor),
-            table.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            table.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            table.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            table.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            table.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
         ])
         self.tableView = table
     }
@@ -182,19 +191,62 @@ final class StoryListViewController: UIViewController {
         }
     }
 
-    // MARK: - Pagination footer
+    // MARK: - Loading indicator
+
+    // Floating pill instead of a table footer: appearing/disappearing never
+    // changes the content size, so rows don't shift under the user's finger.
+    private var loadingPill: UIView?
 
     private func setLoadingMore(_ loading: Bool) {
         if loading {
-            if tableView.tableFooterView == nil {
+            if loadingPill == nil {
+                let pill = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterial))
+                pill.layer.cornerRadius = 18
+                pill.layer.masksToBounds = true
+                pill.translatesAutoresizingMaskIntoConstraints = false
+
                 let spinner = UIActivityIndicatorView(style: .medium)
                 spinner.color = HNTheme.gray
-                spinner.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 56)
                 spinner.startAnimating()
-                tableView.tableFooterView = spinner
+                spinner.translatesAutoresizingMaskIntoConstraints = false
+
+                let label = UILabel()
+                label.text = "Loading more stories"
+                label.font = HNTheme.metaFont
+                label.adjustsFontForContentSizeCategory = true
+                label.textColor = HNTheme.gray
+                label.translatesAutoresizingMaskIntoConstraints = false
+
+                let stack = UIStackView(arrangedSubviews: [spinner, label])
+                stack.axis = .horizontal
+                stack.spacing = 8
+                stack.alignment = .center
+                stack.translatesAutoresizingMaskIntoConstraints = false
+                pill.contentView.addSubview(stack)
+                NSLayoutConstraint.activate([
+                    stack.leadingAnchor.constraint(equalTo: pill.contentView.leadingAnchor, constant: 14),
+                    stack.trailingAnchor.constraint(equalTo: pill.contentView.trailingAnchor, constant: -14),
+                    stack.topAnchor.constraint(equalTo: pill.contentView.topAnchor, constant: 8),
+                    stack.bottomAnchor.constraint(equalTo: pill.contentView.bottomAnchor, constant: -8),
+                ])
+
+                view.addSubview(pill)
+                NSLayoutConstraint.activate([
+                    pill.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                    pill.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+                ])
+                loadingPill = pill
+            }
+            guard let pill = loadingPill, pill.isHidden else { return }
+            pill.isHidden = false
+            pill.alpha = 0
+            if UIAccessibility.isReduceMotionEnabled {
+                pill.alpha = 1
+            } else {
+                UIView.animate(withDuration: 0.2) { pill.alpha = 1 }
             }
         } else {
-            tableView.tableFooterView = nil
+            loadingPill?.isHidden = true
         }
     }
 

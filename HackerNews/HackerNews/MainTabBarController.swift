@@ -26,13 +26,50 @@ final class MainTabBarController: UITabBarController {
         // so switching tabs and retrying pages reuses fetched items
         // instead of refetching them.
         let repository = DefaultHNRepository()
-        viewControllers = Feed.allCases.enumerated().map { index, feed in
+        let feeds: [UIViewController] = Feed.allCases.enumerated().map { index, feed in
             let viewModel = StoryListViewModel(repo: repository, feed: feed)
             let list = StoryListViewController(viewModel: viewModel)
             list.tabBarItem = UITabBarItem(title: feed.title, image: UIImage(systemName: feed.tabIconName), tag: index)
             return UINavigationController(rootViewController: list)
         }
+        // About closes the list after Jobs; iOS shows the first four tabs
+        // and groups the rest under More.
+        let about = UINavigationController(rootViewController: AboutViewController(showsDoneButton: false))
+        about.tabBarItem = UITabBarItem(title: "About", image: UIImage(systemName: "info.circle"), tag: 100)
+        viewControllers = feeds + [about]
+        configureGlobalBarAppearance()
         configureTabBar()
+        configureMoreController()
+    }
+
+    private func configureGlobalBarAppearance() {
+        // Single source for every navigation bar (feed tabs, About tab, the
+        // system More controller, pushed screens): opaque orange, black text.
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = HNTheme.orange
+        appearance.titleTextAttributes = [.font: HNTheme.navTitleFont, .foregroundColor: UIColor.black]
+        let proxy = UINavigationBar.appearance()
+        proxy.standardAppearance = appearance
+        proxy.scrollEdgeAppearance = appearance
+        proxy.compactAppearance = appearance
+        proxy.tintColor = .black
+    }
+
+    private func configureMoreController() {
+        // The system More screen (holding Show, Jobs, and About) only needs
+        // matching bar chrome.
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = HNTheme.orange
+        appearance.titleTextAttributes = [.font: HNTheme.navTitleFont, .foregroundColor: UIColor.black]
+        let bar = moreNavigationController.navigationBar
+        bar.standardAppearance = appearance
+        bar.scrollEdgeAppearance = appearance
+        bar.compactAppearance = appearance
+        bar.tintColor = .black
+        bar.prefersLargeTitles = false
+
     }
 
     private func configureTabBar() {
