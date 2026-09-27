@@ -47,7 +47,7 @@ struct HNItem: Hashable, Codable {
     var url: String?
     var score: Int?
     var title: String?
-    var parts: [String]?
+    var parts: [Int]?
     var descendants: Int?
     
     enum CodingKeys: String, CodingKey {

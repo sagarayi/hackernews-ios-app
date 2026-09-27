@@ -1,0 +1,65 @@
+//
+//  HNTheme.swift
+//  HackerNews
+//
+//  Visual language matching news.ycombinator.com: HN orange chrome,
+//  beige surfaces, gray metadata, Verdana type. The app is pinned to
+//  the light style since the website has no dark mode.
+//
+
+import UIKit
+
+enum HNTheme {
+    static let orange = UIColor(red: 1.0, green: 0.4, blue: 0.0, alpha: 1.0) // #FF6600
+    static let beige = UIColor(red: 0.965, green: 0.965, blue: 0.937, alpha: 1.0) // #F6F6EF
+    static let pressedBeige = UIColor(red: 0.91, green: 0.895, blue: 0.82, alpha: 1.0)
+    static let gray = UIColor(red: 0x82 / 255.0, green: 0x82 / 255.0, blue: 0x82 / 255.0, alpha: 1.0) // #828282
+}
+
+extension HNTheme {
+    /// SF Pro: drawn for on-device legibility (replaces Verdana, whose tight
+    /// spacing and small x-height strain at list sizes). Sizes stay close to
+    /// the site's proportions; Dynamic Type scaling is preserved.
+    static func font(size: CGFloat, weight: UIFont.Weight, textStyle: UIFont.TextStyle) -> UIFont {
+        let base = UIFont.systemFont(ofSize: size, weight: weight)
+        return UIFontMetrics(forTextStyle: textStyle).scaledFont(for: base)
+    }
+
+    static var titleFont: UIFont { font(size: 17, weight: .semibold, textStyle: .headline) }
+    static var metaFont: UIFont { font(size: 12, weight: .regular, textStyle: .footnote) }
+    static var rankFont: UIFont { font(size: 13, weight: .regular, textStyle: .footnote) }
+    static var navTitleFont: UIFont { font(size: 16, weight: .bold, textStyle: .headline) }
+    static var tabFont: UIFont { font(size: 11, weight: .regular, textStyle: .footnote) }
+    static var commentFont: UIFont { font(size: 14, weight: .regular, textStyle: .body) }
+
+    static func pressedBackgroundView() -> UIView {
+        let view = UIView()
+        view.backgroundColor = pressedBeige
+        return view
+    }
+
+    /// The classic bordered "Y" + "Hacker News" header mark.
+    static func makeTitleView() -> UIView {
+        let badge = UILabel()
+        badge.text = "Y"
+        badge.font = font(size: 14, weight: .bold, textStyle: .headline)
+        badge.textColor = .white
+        badge.textAlignment = .center
+        badge.layer.borderColor = UIColor.white.cgColor
+        badge.layer.borderWidth = 1.5
+        badge.translatesAutoresizingMaskIntoConstraints = false
+        badge.widthAnchor.constraint(equalToConstant: 22).isActive = true
+        badge.heightAnchor.constraint(equalToConstant: 22).isActive = true
+
+        let name = UILabel()
+        name.text = "Hacker News"
+        name.font = navTitleFont
+        name.textColor = .black
+
+        let stack = UIStackView(arrangedSubviews: [badge, name])
+        stack.axis = .horizontal
+        stack.spacing = 6
+        stack.alignment = .center
+        return stack
+    }
+}
