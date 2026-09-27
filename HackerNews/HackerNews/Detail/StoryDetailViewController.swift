@@ -36,6 +36,10 @@ final class StoryDetailViewController: UIViewController {
     private var progressObservation: NSKeyValueObservation?
     private var didAnimateBottomBar = false
 
+    private let archiveButton = UIButton(type: .system)
+    private var archiveSnapshotURL: URL?
+    private let archiveChecker = ArchiveAvailability()
+
     // MARK: - URLs
 
     private var articleURL: URL? {
@@ -86,6 +90,11 @@ final class StoryDetailViewController: UIViewController {
         setupBottomBar()
         updateCommentsButton()
         loadCurrent()
+        if articleURL != nil {
+            Task { [weak self] in
+                await self?.resolveArchiveButton()
+            }
+        }
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -139,6 +148,9 @@ final class StoryDetailViewController: UIViewController {
         configureToolbarButton(backButton, systemName: "chevron.backward", action: #selector(didTapBack))
         configureToolbarButton(forwardButton, systemName: "chevron.forward", action: #selector(didTapForward))
         configureToolbarButton(commentsButton, systemName: "bubble.right", action: #selector(didTapComments))
+        configureToolbarButton(archiveButton, systemName: "archivebox", action: #selector(didTapArchive))
+        archiveButton.accessibilityLabel = "Archived copy"
+        archiveButton.isHidden = true
         configureToolbarButton(shareButton, systemName: "square.and.arrow.up", action: #selector(didTapShare))
         configureToolbarButton(safariButton, systemName: "safari", action: #selector(didTapSafari))
         backButton.isEnabled = false
@@ -147,7 +159,7 @@ final class StoryDetailViewController: UIViewController {
         let spacer = UIView()
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
-        let stack = UIStackView(arrangedSubviews: [backButton, forwardButton, spacer, commentsButton, shareButton, safariButton])
+        let stack = UIStackView(arrangedSubviews: [backButton, forwardButton, spacer, commentsButton, archiveButton, shareButton, safariButton])
         stack.axis = .horizontal
         stack.spacing = 8
         stack.alignment = .center
@@ -175,6 +187,8 @@ final class StoryDetailViewController: UIViewController {
             forwardButton.heightAnchor.constraint(equalToConstant: 44),
             commentsButton.widthAnchor.constraint(equalToConstant: 44),
             commentsButton.heightAnchor.constraint(equalToConstant: 44),
+            archiveButton.widthAnchor.constraint(equalToConstant: 44),
+            archiveButton.heightAnchor.constraint(equalToConstant: 44),
             shareButton.widthAnchor.constraint(equalToConstant: 44),
             shareButton.heightAnchor.constraint(equalToConstant: 44),
             safariButton.widthAnchor.constraint(equalToConstant: 44),
@@ -276,6 +290,33 @@ final class StoryDetailViewController: UIViewController {
 
     private func hideErrorOverlay() {
         errorOverlay?.isHidden = true
+    }
+
+    // MARK: - Archive copy
+
+    private func resolveArchiveButton() async {
+        guard let articleURL else { return }
+        guard let snapshot = await archiveChecker.latestSnapshot(for: articleURL) else { return }
+        archiveSnapshotURL = snapshot
+        showArchiveButton()
+    }
+
+    private func showArchiveButton() {
+        archiveButton.isHidden = false
+        archiveButton.alpha = 0
+        if UIAccessibility.isReduceMotionEnabled {
+            archiveButton.alpha = 1
+        } else {
+            UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseOut) {
+                self.archiveButton.alpha = 1
+            }
+        }
+    }
+
+    @objc private func didTapArchive() {
+        guard let url = archiveSnapshotURL else { return }
+        hideErrorOverlay()
+        webView.load(URLRequest(url: url))
     }
 
     // MARK: - Toolbar actions
