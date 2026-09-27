@@ -125,6 +125,9 @@ final class StoryListViewController: UIViewController {
         viewModel.onChange = { [weak self] state in
             self?.apply(state: state)
         }
+        viewModel.onLoadingMoreChanged = { [weak self] loading in
+            self?.setLoadingMore(loading)
+        }
     }
 
     // MARK: - Actions
@@ -176,6 +179,22 @@ final class StoryListViewController: UIViewController {
             case .idle, .loading:
                 break
             }
+        }
+    }
+
+    // MARK: - Pagination footer
+
+    private func setLoadingMore(_ loading: Bool) {
+        if loading {
+            if tableView.tableFooterView == nil {
+                let spinner = UIActivityIndicatorView(style: .medium)
+                spinner.color = HNTheme.gray
+                spinner.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 56)
+                spinner.startAnimating()
+                tableView.tableFooterView = spinner
+            }
+        } else {
+            tableView.tableFooterView = nil
         }
     }
 

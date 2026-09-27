@@ -57,19 +57,34 @@ actor MockOrderProvider: StoryOrderProviding {
     var pages: [[Int]] = []
     var hasMoreFlags: [Bool] = []
     var failure: Error?
+    private var moreCalls = 0
 
     func configure(pages: [[Int]], hasMore: [Bool] = [], failure: Error? = nil) {
         self.pages = pages
         self.hasMoreFlags = hasMore
         self.failure = failure
+        self.moreCalls = 0
     }
 
-    func storyIds(feed: Feed, page: Int) async throws -> StoryOrderPage {
+    func storyIds(feed: Feed) async throws -> StoryOrderPage {
         if let failure { throw failure }
-        let index = page - 1
-        guard index < pages.count else { return StoryOrderPage(ids: [], hasMore: false) }
+        guard !pages.isEmpty else { return StoryOrderPage(ids: [], moreURL: nil) }
+        return makePage(index: 0)
+    }
+
+    func storyIds(moreURL: URL) async throws -> StoryOrderPage {
+        if let failure { throw failure }
+        moreCalls += 1
+        guard moreCalls < pages.count else { return StoryOrderPage(ids: [], moreURL: nil) }
+        return makePage(index: moreCalls)
+    }
+
+    private func makePage(index: Int) -> StoryOrderPage {
         let more = index < hasMoreFlags.count ? hasMoreFlags[index] : false
-        return StoryOrderPage(ids: pages[index], hasMore: more)
+        return StoryOrderPage(
+            ids: pages[index],
+            moreURL: more ? URL(string: "https://news.ycombinator.com/more\(index)") : nil
+        )
     }
 }
 
@@ -84,7 +99,7 @@ final class StoryListViewModelTests: XCTestCase {
         await mock.configure(ids: Array(Set(pages.flatMap { $0 })), failing: failing)
         let order = MockOrderProvider()
         await order.configure(pages: pages, hasMore: hasMore, failure: orderFailure)
-        let viewModel = await StoryListViewModel(repo: mock, orderProvider: order, feed: .new)
+        let viewModel = await StoryListViewModel(repo: mock, orderProvider: order, feed: .new, batchDelay: 0)
         return (viewModel, mock, order)
     }
 
@@ -203,14 +218,17 @@ final class StoryListViewModelTests: XCTestCase {
         <tr class="athing" id="207"><td><span class="rank">2.</span></td></tr>
         <tr><td class="subtext">score etc</td></tr>
         <tr class="athing" id="933"><td><span class="rank">3.</span></td></tr>
-        </table><a class="morelink" href="news?p=2" rel="next">More</a></body></html>
+        </table><a href='newest?next=933&amp;n=31' class='morelink' rel='next'>More</a></body></html>
         """
-        let page = HNHTMLScraper.parse(html: html)
+        let base = URL(string: "https://news.ycombinator.com/newest")!
+        let page = HNHTMLScraper.parse(html: html, baseURL: base)
         XCTAssertEqual(page.ids, [511, 207, 933])
         XCTAssertTrue(page.hasMore)
+        XCTAssertEqual(page.moreURL?.absoluteString, "https://news.ycombinator.com/newest?next=933&n=31")
 
-        let lastPage = HNHTMLScraper.parse(html: "<html><body>No more rows</body></html>")
+        let lastPage = HNHTMLScraper.parse(html: "<html><body>No more rows</body></html>", baseURL: base)
         XCTAssertTrue(lastPage.ids.isEmpty)
         XCTAssertFalse(lastPage.hasMore)
+        XCTAssertNil(lastPage.moreURL)
     }
 }

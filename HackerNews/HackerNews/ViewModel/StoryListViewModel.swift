@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import os
 
 enum StoryListState: Equatable {
     case idle
@@ -19,6 +20,7 @@ protocol StoryListViewModeling: AnyObject {
     var state: StoryListState { get }
     var items: [HNItem] { get }
     var onChange: (@MainActor (StoryListState) -> Void)? { get set }
+    var onLoadingMoreChanged: (@MainActor (Bool) -> Void)? { get set }
     func load() async
     func refresh() async
     func loadMoreIfNeeded(currentIndex: Int) async
@@ -35,25 +37,34 @@ final class StoryListViewModel: StoryListViewModeling {
     private(set) var state: StoryListState = .idle
     private(set) var items: [HNItem] = []
     var onChange: (@MainActor (StoryListState) -> Void)?
+    var onLoadingMoreChanged: (@MainActor (Bool) -> Void)?
 
     private let repo: HNRepository
     private let orderProvider: StoryOrderProviding
     private let feed: Feed
 
     private var itemsById: [Int: HNItem] = [:]
-    private var nextPage = 1
+    private var nextPageURL: URL?
     private var hasMorePages = true
     private var isLoadingPage = false
     private var nextAutoRetryDate = Date.distantPast
+    private var consecutiveFailures = 0
+    private var autoRetryTask: Task<Void, Never>?
+    private var autoRetryCount = 0
+    private let maxAutoRetries = 3
+    private let log = Logger(subsystem: "com.sagarayi.HackerNews", category: "pagination")
 
     private let threshold = 6
-    private let hydrationConcurrency = 8
-    private let retryCooldown: TimeInterval = 5
+    private let hydrationConcurrency = 4
+    private let interBatchDelay: UInt64
+    private let baseRetryCooldown: TimeInterval = 5
+    private let maxRetryCooldown: TimeInterval = 60
 
-    init(repo: HNRepository, orderProvider: StoryOrderProviding = HNHTMLScraper(), feed: Feed) {
+    init(repo: HNRepository, orderProvider: StoryOrderProviding = HNHTMLScraper(), feed: Feed, batchDelay: UInt64 = 250_000_000) {
         self.repo = repo
         self.orderProvider = orderProvider
         self.feed = feed
+        self.interBatchDelay = batchDelay
     }
 
     // MARK: - Initial load / refresh
@@ -62,24 +73,33 @@ final class StoryListViewModel: StoryListViewModeling {
     /// ready, so pull-to-refresh never flashes empty.
     func load() async {
         guard state != .loading else { return }
+        cancelAutoRetry()
         state = .loading
         emit()
+        log.debug("initial load feed=\(self.feed.rawValue, privacy: .public)")
         do {
-            let page = try await orderProvider.storyIds(feed: feed, page: 1)
+            let page = try await orderProvider.storyIds(feed: feed)
             try Task.checkCancellation()
             let (pageItems, pageError) = try await hydratePage(page.ids[...])
             try Task.checkCancellation()
             if pageItems.isEmpty {
                 let message = errorMessage(for: pageError ?? HNError.invalidResponse)
-                state = items.isEmpty ? .error(message) : .loaded
+                if items.isEmpty {
+                    state = .error(message)
+                    scheduleAutoRetry(reloadingInitial: true)
+                } else {
+                    state = .loaded
+                }
             } else {
                 items = pageItems
                 itemsById = Dictionary(uniqueKeysWithValues: pageItems.map { ($0.id, $0) })
                 if feed == .comments {
                     await fetchParents(for: pageItems)
                 }
-                nextPage = 2
+                nextPageURL = page.moreURL
                 hasMorePages = page.hasMore
+                consecutiveFailures = 0
+                cancelAutoRetry()
                 state = .loaded
             }
             emit()
@@ -105,27 +125,46 @@ final class StoryListViewModel: StoryListViewModeling {
               hasMorePages,
               Date() >= nextAutoRetryDate,
               currentIndex >= items.count - threshold else { return }
+        guard let moreURL = nextPageURL else { return }
         isLoadingPage = true
-        defer { isLoadingPage = false }
+        onLoadingMoreChanged?(true)
+        defer {
+            isLoadingPage = false
+            onLoadingMoreChanged?(false)
+        }
+        log.debug("loadMore more=\(moreURL.absoluteString, privacy: .public) loaded=\(self.items.count)")
 
         do {
-            let page = try await orderProvider.storyIds(feed: feed, page: nextPage)
+            let page = try await orderProvider.storyIds(moreURL: moreURL)
             let (pageItems, pageError) = try await hydratePage(page.ids[...])
+            log.debug("site page returned \(page.ids.count) ids hasMore=\(page.hasMore), hydrated \(pageItems.count)")
 
             guard !pageItems.isEmpty else {
-                if page.ids.isEmpty || pageError == nil {
-                    // Dead page (everything deleted) or truly empty: skip it
-                    // so scrolling never stalls on an unloadable page.
-                    nextPage += 1
-                    hasMorePages = page.hasMore
-                    state = .loaded
+                if page.ids.isEmpty {
+                    // The site returned no rows — a bad/blocked page, not the
+                    // end of the feed. Never trust it as final: don't advance,
+                    // and keep pagination retryable instead of stalling it.
+                    noteFailure()
+                    log.error("site page contained zero rows")
+                    state = .error("Hacker News returned an empty page. Pull to refresh or tap Retry.")
+                    scheduleAutoRetry(reloadingInitial: false)
                     emit()
-                } else {
+                } else if let pageError {
                     // Typically a 429/network failure: back off so continued
                     // scrolling doesn't hammer the API. Explicit Retry
                     // bypasses this cooldown.
-                    nextAutoRetryDate = Date().addingTimeInterval(retryCooldown)
-                    state = .error(errorMessage(for: pageError!))
+                    noteFailure()
+                    state = .error(errorMessage(for: pageError))
+                    scheduleAutoRetry(reloadingInitial: false)
+                    emit()
+                } else {
+                    // Every row was deleted: skip the page so scrolling
+                    // never stalls on unloadable rows.
+                    nextPageURL = page.moreURL
+                    hasMorePages = page.hasMore
+                    consecutiveFailures = 0
+                    cancelAutoRetry()
+                    state = .loaded
                     emit()
                 }
                 return
@@ -139,15 +178,19 @@ final class StoryListViewModel: StoryListViewModeling {
             if feed == .comments {
                 await fetchParents(for: fresh)
             }
-            nextPage += 1
+            log.debug("appended \(fresh.count) rows, total \(self.items.count)")
+            nextPageURL = page.moreURL
             hasMorePages = page.hasMore
+            consecutiveFailures = 0
+            cancelAutoRetry()
             state = .loaded
             emit()
         } catch is CancellationError {
             // Ignored.
         } catch {
-            nextAutoRetryDate = Date().addingTimeInterval(retryCooldown)
+            noteFailure()
             state = .error(errorMessage(for: error))
+            scheduleAutoRetry(reloadingInitial: false)
             emit()
         }
     }
@@ -155,6 +198,7 @@ final class StoryListViewModel: StoryListViewModeling {
     func retryLoadMore() async {
         // Explicit user action bypasses the post-failure cooldown.
         nextAutoRetryDate = .distantPast
+        cancelAutoRetry()
         await loadMoreIfNeeded(currentIndex: max(0, items.count - 1))
     }
 
@@ -178,9 +222,13 @@ final class StoryListViewModel: StoryListViewModeling {
         let repo = self.repo
         var collected: [(Int, HNItem?, Error?)] = []
         collected.reserveCapacity(indexed.count)
-        // Bounded concurrency: firing a full page of ~30 item requests at
-        // once gets the API to answer 429. Batches of 8 stay well under it.
-        for start in stride(from: 0, to: indexed.count, by: hydrationConcurrency) {
+        // Bounded concurrency plus pacing: firing a full page of ~30 item
+        // requests at once gets the API to answer 429. Small batches with
+        // a short pause between them stay well under the limit.
+        for (batchIndex, start) in stride(from: 0, to: indexed.count, by: hydrationConcurrency).enumerated() {
+            if batchIndex > 0 {
+                try await Task.sleep(nanoseconds: interBatchDelay)
+            }
             try Task.checkCancellation()
             let end = min(start + hydrationConcurrency, indexed.count)
             let chunk = indexed[start..<end]
@@ -216,7 +264,10 @@ final class StoryListViewModel: StoryListViewModeling {
         let missing = Array(Set(comments.compactMap(\.parent)).subtracting(Set(itemsById.keys)))
         guard !missing.isEmpty else { return }
         let repo = self.repo
-        for start in stride(from: 0, to: missing.count, by: hydrationConcurrency) {
+        for (batchIndex, start) in stride(from: 0, to: missing.count, by: hydrationConcurrency).enumerated() {
+            if batchIndex > 0 {
+                try? await Task.sleep(nanoseconds: interBatchDelay)
+            }
             if Task.isCancelled { return }
             let end = min(start + hydrationConcurrency, missing.count)
             let chunk = missing[start..<end]
@@ -240,8 +291,50 @@ final class StoryListViewModel: StoryListViewModeling {
         }
     }
 
+    /// Exponential backoff (5s, doubling to a 60s cap) across consecutive
+    /// failures so a struggling API isn't hammered by continued scrolling.
+    /// Reset on success; explicit Retry bypasses the resulting cooldown.
+    private func noteFailure() {
+        let delay = min(baseRetryCooldown * pow(2.0, Double(consecutiveFailures)), maxRetryCooldown)
+        consecutiveFailures += 1
+        nextAutoRetryDate = Date().addingTimeInterval(delay)
+    }
+
+    /// Schedules one automatic retry after the backoff expires, so a failed
+    /// page recovers on its own while the user keeps reading. Capped at
+    /// `maxAutoRetries`; manual Retry and refresh take precedence by
+    /// cancelling any pending attempt.
+    private func scheduleAutoRetry(reloadingInitial: Bool) {
+        guard autoRetryCount < maxAutoRetries else { return }
+        autoRetryCount += 1
+        autoRetryTask?.cancel()
+        autoRetryTask = Task { [weak self] in
+            guard let self else { return }
+            let wait = max(0, self.nextAutoRetryDate.timeIntervalSinceNow) + 0.5
+            do {
+                try await Task.sleep(nanoseconds: UInt64(wait * 1_000_000_000))
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+            if reloadingInitial {
+                await self.load()
+            } else {
+                await self.retryLoadMore()
+            }
+        }
+    }
+
+    private func cancelAutoRetry() {
+        autoRetryCount = 0
+        autoRetryTask?.cancel()
+        autoRetryTask = nil
+    }
+
     private func errorMessage(for error: Error) -> String {
-        (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        log.error("request failed: \(message, privacy: .public)")
+        return message
     }
 
     private func emit() {

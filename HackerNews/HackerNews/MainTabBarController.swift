@@ -22,8 +22,12 @@ final class MainTabBarController: UITabBarController {
         // The website is light-only; pin the whole app to match.
         overrideUserInterfaceStyle = .light
         view.backgroundColor = HNTheme.beige
+        // One shared repository: its item cache is then shared across tabs,
+        // so switching tabs and retrying pages reuses fetched items
+        // instead of refetching them.
+        let repository = DefaultHNRepository()
         viewControllers = Feed.allCases.enumerated().map { index, feed in
-            let viewModel = StoryListViewModel(repo: DefaultHNRepository(), feed: feed)
+            let viewModel = StoryListViewModel(repo: repository, feed: feed)
             let list = StoryListViewController(viewModel: viewModel)
             list.tabBarItem = UITabBarItem(title: feed.title, image: UIImage(systemName: feed.tabIconName), tag: index)
             return UINavigationController(rootViewController: list)
