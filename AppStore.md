@@ -9,6 +9,7 @@
 - `PRIVACY.md` + `TERMS.md` in repo — usable as hosted policy URLs
 - `PrivacyInfo.xcprivacy`: no tracking, no collected data, no required-reason APIs
 - `ITSAppUsesNonExemptEncryption=false` (standard HTTPS only → export-compliant)
+- App icons: 1024 light (orange/white HN) + dark (black/orange HN) wired in the asset catalog
 - No login, no analytics, no ads, no push, no background modes, no IDFA
 - Public frameworks only (UIKit/WebKit/Foundation) — no private API
 - HTTPS-only networking, no hardcoded IPs (cellular/IPv6-safe)
@@ -17,7 +18,6 @@
 - Dynamic Type, Reduce Motion, and VoiceOver labels throughout
 
 ### Still open
-- **1024 app icon** (+dark variant): slots are empty — required for submission
 - Screenshots must come from your builds (sizes below)
 
 ### You do (Apple Developer account + App Store Connect)
