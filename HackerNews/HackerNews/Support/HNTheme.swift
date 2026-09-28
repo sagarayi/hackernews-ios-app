@@ -10,10 +10,34 @@
 import UIKit
 
 enum HNTheme {
-    static let orange = UIColor(red: 1.0, green: 0.4, blue: 0.0, alpha: 1.0) // #FF6600
-    static let beige = UIColor(red: 0.965, green: 0.965, blue: 0.937, alpha: 1.0) // #F6F6EF
-    static let pressedBeige = UIColor(red: 0.91, green: 0.895, blue: 0.82, alpha: 1.0)
-    static let gray = UIColor(red: 0x82 / 255.0, green: 0x82 / 255.0, blue: 0x82 / 255.0, alpha: 1.0) // #828282
+    static let orange = UIColor(red: 1.0, green: 0.4, blue: 0.0, alpha: 1.0) // #FF6600, both modes
+    static let beige = dynamic( // #F6F6EF by day, warm charcoal by night
+        light: UIColor(red: 0.965, green: 0.965, blue: 0.937, alpha: 1.0),
+        dark: UIColor(red: 0.11, green: 0.106, blue: 0.09, alpha: 1.0)
+    )
+    static let pressedBeige = dynamic(
+        light: UIColor(red: 0.91, green: 0.895, blue: 0.82, alpha: 1.0),
+        dark: UIColor(red: 0.20, green: 0.19, blue: 0.16, alpha: 1.0)
+    )
+    static let gray = UIColor(red: 0x82 / 255.0, green: 0x82 / 255.0, blue: 0x82 / 255.0, alpha: 1.0) // #828282, both modes
+    static let text = dynamic(
+        light: .black,
+        dark: UIColor(red: 0.95, green: 0.94, blue: 0.90, alpha: 1.0)
+    )
+    static let tabSelected = UIColor { traits in
+        traits.userInterfaceStyle == .dark ? .white : .black
+    }
+    static let tabUnselected = UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor.white.withAlphaComponent(0.6)
+            : UIColor.black.withAlphaComponent(0.55)
+    }
+
+    private static func dynamic(light: UIColor, dark: UIColor) -> UIColor {
+        UIColor { traits in
+            traits.userInterfaceStyle == .dark ? dark : light
+        }
+    }
 }
 
 extension HNTheme {

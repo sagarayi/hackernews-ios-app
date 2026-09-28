@@ -5,7 +5,7 @@
 ### Done in code
 - Neutral display name (**HN Reader** via `CFBundleDisplayName`); target and bundle ID untouched
 - No YC logo or wordmark anywhere in UI; section names as nav titles
-- In-app About tab: version, unofficial disclaimer, privacy policy, terms
+- In-app Settings tab: appearance switcher plus version, unofficial disclaimer, privacy policy, terms
 - `PRIVACY.md` + `TERMS.md` in repo — usable as hosted policy URLs
 - `PrivacyInfo.xcprivacy`: no tracking, no collected data, no required-reason APIs
 - `ITSAppUsesNonExemptEncryption=false` (standard HTTPS only → export-compliant)
@@ -51,7 +51,7 @@
 
 ## Screenshots needed
 
-- iPhone 6.9" (1290×2796) and 6.5" (1242×2688 or 1284×2778) — required
+- iPhone 6.9" (1290×2796) and 6.5" (1242×2688 or 1284×2778) — required, each in both light and dark appearances
 - iPad 13" (2048×2732 or 2064×2752) — required while the app is universal; alternatively restrict to iPhone-only to skip these
 
 ## Upload steps

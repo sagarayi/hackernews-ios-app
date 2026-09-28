@@ -112,7 +112,7 @@ final class StoryViewCell: UITableViewCell {
 
         let title = NSMutableAttributedString(
             string: item.title ?? "(no title)",
-            attributes: [.font: HNTheme.titleFont, .foregroundColor: UIColor.black]
+            attributes: [.font: HNTheme.titleFont, .foregroundColor: HNTheme.text]
         )
         if let host = item.domainHost {
             title.append(NSAttributedString(

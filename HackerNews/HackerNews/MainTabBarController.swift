@@ -19,8 +19,8 @@ final class MainTabBarController: UITabBarController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // The website is light-only; pin the whole app to match.
-        overrideUserInterfaceStyle = .light
+        // Follows the system appearance; HNTheme colors adapt (beige by day,
+        // warm charcoal by night, orange chrome throughout).
         view.backgroundColor = HNTheme.beige
         // One shared repository: its item cache is then shared across tabs,
         // so switching tabs and retrying pages reuses fetched items
@@ -32,11 +32,12 @@ final class MainTabBarController: UITabBarController {
             list.tabBarItem = UITabBarItem(title: feed.title, image: UIImage(systemName: feed.tabIconName), tag: index)
             return UINavigationController(rootViewController: list)
         }
-        // About closes the list after Jobs; iOS shows the first four tabs
-        // and groups the rest under More.
-        let about = UINavigationController(rootViewController: AboutViewController(showsDoneButton: false))
-        about.tabBarItem = UITabBarItem(title: "About", image: UIImage(systemName: "info.circle"), tag: 100)
-        viewControllers = feeds + [about]
+        // Settings closes the list after Jobs with the appearance switcher
+        // and the About section; iOS shows the first four tabs and groups
+        // the rest under More.
+        let settings = UINavigationController(rootViewController: SettingsViewController())
+        settings.tabBarItem = UITabBarItem(title: "Settings", image: UIImage(systemName: "gear"), tag: 100)
+        viewControllers = feeds + [settings]
         configureGlobalBarAppearance()
         configureTabBar()
         configureMoreController()
@@ -77,21 +78,25 @@ final class MainTabBarController: UITabBarController {
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = HNTheme.orange
 
-        let normalColor = UIColor.black.withAlphaComponent(0.55)
-        appearance.stackedLayoutAppearance.normal.iconColor = normalColor
-        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
-            .font: HNTheme.tabFont,
-            .foregroundColor: normalColor,
-        ]
-        appearance.stackedLayoutAppearance.selected.iconColor = .black
-        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
-            .font: HNTheme.tabFont,
-            .foregroundColor: UIColor.black,
-        ]
+        func style(_ itemAppearance: UITabBarItemAppearance) {
+            itemAppearance.normal.iconColor = HNTheme.tabUnselected
+            itemAppearance.normal.titleTextAttributes = [
+                .font: HNTheme.tabFont,
+                .foregroundColor: HNTheme.tabUnselected,
+            ]
+            itemAppearance.selected.iconColor = HNTheme.tabSelected
+            itemAppearance.selected.titleTextAttributes = [
+                .font: HNTheme.tabFont,
+                .foregroundColor: HNTheme.tabSelected,
+            ]
+        }
+        style(appearance.stackedLayoutAppearance)
+        style(appearance.inlineLayoutAppearance)
+        style(appearance.compactInlineLayoutAppearance)
 
         tabBar.standardAppearance = appearance
         tabBar.scrollEdgeAppearance = appearance
-        tabBar.tintColor = .black
-        tabBar.unselectedItemTintColor = normalColor
+        tabBar.tintColor = HNTheme.tabSelected
+        tabBar.unselectedItemTintColor = HNTheme.tabUnselected
     }
 }

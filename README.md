@@ -14,11 +14,11 @@ Mirrors the site navigation: **New · Past · Comments · Ask · Show · Jobs**.
 - Comments tab with parent-story context; tap any row to open the thread
 - In-app reader with article/comments toggle, archive.today snapshot button (shown only when the story is archived), share, and open-in-Safari; tab bar hides on push
 - Full-screen and inline error states with retry; gentle API usage via bounded concurrency, paced batches, a shared cross-tab cache, exponential backoff, and automatic retry of failed pages
-- Dynamic Type and Reduce Motion support, pinned to the site's light style
+- Dynamic Type and Reduce Motion support; light, dark, and automatic themes (defaults to light, switchable in Settings)
 
 ## Legal
 
-Unofficial client — see [PRIVACY.md](PRIVACY.md) and [TERMS.md](TERMS.md), also available in the About tab.
+Unofficial client — see [PRIVACY.md](PRIVACY.md) and [TERMS.md](TERMS.md), also available in the Settings tab.
 
 ## Requirements
 

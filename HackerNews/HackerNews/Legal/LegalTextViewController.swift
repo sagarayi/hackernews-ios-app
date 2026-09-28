@@ -23,7 +23,7 @@ final class LegalTextViewController: UIViewController {
     override func loadView() {
         let textView = UITextView()
         textView.backgroundColor = HNTheme.beige
-        textView.textColor = .black
+        textView.textColor = HNTheme.text
         textView.font = HNTheme.font(size: 15, weight: .regular, textStyle: .body)
         textView.isEditable = false
         textView.isSelectable = true

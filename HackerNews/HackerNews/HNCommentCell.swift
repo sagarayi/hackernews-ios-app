@@ -33,7 +33,7 @@ final class HNCommentCell: UITableViewCell {
 
         bodyLabel.font = HNTheme.commentFont
         bodyLabel.adjustsFontForContentSizeCategory = true
-        bodyLabel.textColor = .black
+        bodyLabel.textColor = HNTheme.text
         bodyLabel.numberOfLines = 4
         bodyLabel.lineBreakMode = .byTruncatingTail
 
